@@ -48,19 +48,14 @@
 
 // ------- Setup Start -------
   // Includes
-    #include <VescUart.h>
+    // #include <VescUart.h>
     #include <SoftwareSerial.h>
     #include <stdlib.h>
   
   // Constants
     bool debugresponse = true;
-    int vescbaudrate = 9600;
 
   // Variables
-
-    int spd_count = 0;
-    bool increase_spd = true;
-    bool decrease_spd = false;
 
     int telem_instance_count = 0;
 
@@ -76,19 +71,10 @@
     
   // Pins
     // Analog
-      const int LeftHandbrake = 14;   // A0
-      const int RightHandbrake = 15;  // A1
-      const int LeftInfared = 16;     // A2
-      const int RightInfared = 17;    // A3
       //int ANALOG4 = 18; // A4
       //int ANALOG5 = 19; // A5
 
     // Digital and Serial
-
-      const int UltrasonicTrig = 27;
-      const int UltrasonicEcho = 28;
-      const int FOR_RELAY_PIN = 3;
-      const int REV_RELAY_PIN = 4;
 
       const int DebugSwitchPin = 22;
 
@@ -106,187 +92,11 @@
 
          Only software serial pins have to be specified. All others are set by default by Arduino */
     
-      SoftwareSerial SoftSerialBLE(52, 53);
-      SoftwareSerial SoftSerialLoRa(50, 51);
+      SoftwareSerial SoftSerialBLEL(52, 53);
+      SoftwareSerial SoftSerialBLER(50, 51);
+      SoftwareSerial SoftSerialBLEF(48, 49);
 
 // ------- Setup End -------
-
-
-
-// ------- Motor Start -------
-
-  VescUart vescML;
-  VescUart vescMR;
-
-  int oldSpeedL = 0;
-  int oldSpeedR = 0;
-
-  float getMotorRPM(VescUart vesc) {
-    if (vesc.getVescValues()) {
-      float motor_rpm = vesc.data.rpm;
-
-      Serial.print("RPM: "); Serial.println(motor_rpm);
-      return motor_rpm;
-    }
-    else
-    {
-      float motor_rpm = 9999;
-      
-      Serial.println("Failed to get data!");
-      return motor_rpm;
-    }
-  }
-
-
-  void setMotorSpeed(float left, float right){
-    vescML.setDuty(left / 100);
-    vescMR.setDuty(right / 100); 
-  }
-
-  void setMotorSpeedBetter(float left, float right){
-    if (left != oldSpeedL) {
-  
-      vescML.setDuty(left / 100);
-      oldSpeedL = left;
-
-      if ( debugresponse ) { 
-        Serial.print ( "setMotorSpeed: Left speed changed: " );
-        Serial.println ( left );
-      } 
-     
-    } else {
-        Serial.println ( "setMotorSpeed: Left speed unchanged" );
-    }
-    
-    
-    if (right != oldSpeedR) {
-      vescMR.setDuty(right / 100);
-      oldSpeedR = right;
-
-      if ( debugresponse ) { 
-        Serial.print ( "setMotorSpeed: Right speed changed: " );
-        Serial.println ( right );
-      } 
-     
-    } else {
-        Serial.println ( "setMotorSpeed: Right speed unchanged" );
-    }}
-
-    void motordebug(){
-      if(debugresponse){
-    
-        if (vescML.getVescValues() ){
-           Serial.print("Left RPM: ");
-           Serial.print(vescML.data.rpm);
-           Serial.print(" | Tachometer: ");
-           Serial.println(vescML.data.tachometerAbs);
-        }
-        else { Serial.println("Left Data Failed!"); }
-        
-        if (vescMR.getVescValues() ){
-           Serial.print("Right RPM: ");
-           Serial.print(vescMR.data.rpm);
-           Serial.print(" | Tachometer: ");
-           Serial.println(vescMR.data.tachometerAbs);
-        }
-        else { Serial.println("Right Data Failed!"); }
-    
-      } else{}
-    }
-
-// ------- Motor End -------
-
-
-
-// ------- Actuator Start -------
-
-void extendActuators(){
-  digitalWrite(FOR_RELAY_PIN, HIGH);
-  digitalWrite(REV_RELAY_PIN, LOW);
-}
-
-void retractActuators(){
-  digitalWrite(FOR_RELAY_PIN, LOW);
-  digitalWrite(REV_RELAY_PIN, HIGH);
-}
-
-// ------- Actuator End -------
-
-
-
-// ------- Sensor Start -------
-
-  
-
-  // Ultrasonic variableas
-  int distanceUltrasonic; // variable for the distance measurement
-
-  void loopUltrasonic() {
-  
-  // Clears the trigPin condition
-    digitalWrite(UltrasonicTrig, LOW);
-    delayMicroseconds(2);
-    
-  // Sets the trigPin HIGH (ACTIVE) for 10 microseconds
-    digitalWrite(UltrasonicTrig, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(UltrasonicTrig, LOW);
-    
-  // Reads the echoPin, returns the sound wave travel time in microseconds
-    long duration = pulseIn(UltrasonicEcho, HIGH); // variable for the duration of sound wave travel
-    
-  // Calculating the distance
-    distanceUltrasonic = duration * 0.034 / 2; // Speed of sound wave divided by 2 (go and back)
-
-    if ( debugresponse ) { 
-      Serial.print ( "loopUltrasonic: Ultrasonic distance: " );
-      Serial.println ( distanceUltrasonic );
-    }
-  
-  }
-
-
-
-  // Infared variables
-  int distanceIRLeft;
-  int distanceIRRight;
-
-  void loopIR() {
-    float voltsL = analogRead(LeftInfared)*0.0048828125;  // value from sensor * (5/1024)
-    distanceIRLeft = 13*pow(voltsL, -1); // worked out from datasheet graph
-  
-    float voltsR = analogRead(RightInfared)*0.0048828125;  // value from sensor * (5/1024)
-    distanceIRRight = 13*pow(voltsR, -1); // worked out from datasheet graph
-  
-    if ( debugresponse ) { 
-      Serial.print ( "loopIR - Infared distances: Left: " );
-      Serial.print ( distanceIRLeft );
-      Serial.print ( " Right: " );
-      Serial.println ( distanceIRRight );
-    }
-  }
-
-
-
-  // Pressure variables
-  int pressureReadingLeft;      // the analog reading from the FSR resistor divider
-  int pressureReadingRight;
-
-  void loopPressure() {
-    pressureReadingLeft = analogRead(LeftHandbrake);
-    pressureReadingRight = analogRead(RightHandbrake);
-  
-    if ( debugresponse ) { 
-      Serial.print ( "loopPressure - Pressure reading: Left: " );
-      Serial.print ( pressureReadingLeft );
-      Serial.print ( " Right: " );
-      Serial.println ( pressureReadingRight );
-      }
-
-  }
-
-// ------- Sensor End -------
-
 
 
 // ------- Bluetooth Serial Start -------
@@ -349,12 +159,14 @@ void retractActuators(){
     // rssi (RSSI value, float form)
     
     //Serial.listen(); //find serial value
+    SoftSerialBLEL.listen();
+    delay(10);
 
-    while (SoftSerialBLE.available() > 0) { //If there are available bytes...
+    while (SoftSerialBLEL.available() > 0) { //If there are available bytes...
       
       static unsigned int tlm_pos = 0; //start at index zero
        
-      char inByte = SoftSerialBLE.read(); //get the next byte
+      char inByte = SoftSerialBLEL.read(); //get the next byte
       if (inByte != '\n' && (tlm_pos < maxlength - 1)) { //if it's before we reach the end...
         tlmL[tlm_pos] = inByte; //add to buffer
         tlm_pos++; //set index up
@@ -388,17 +200,23 @@ void retractActuators(){
         
         tlm_pos = 0;  // Await next command
         
-      }   }   }
+      }   }   
+      
+      SoftSerialBLEL.end();
+
+      }
 
 // ---===---
 
    void getRSSIR() { 
 
-    while (Serial1.available() > 0) { //If there are available bytes...
+    SoftSerialBLER.listen();
+
+    while (SoftSerialBLER.available() > 0) { //If there are available bytes...
       
       static unsigned int tlm_pos = 0; //start at index zero
        
-      char inByte = Serial1.read(); //get the next byte
+      char inByte = SoftSerialBLER.read(); //get the next byte
       if (inByte != '\n' && (tlm_pos < maxlength - 1)) { //if it's before we reach the end...
         tlmR[tlm_pos] = inByte; //add to buffer
         tlm_pos++; //set index up
@@ -431,17 +249,24 @@ void retractActuators(){
         
         tlm_pos = 0;  // Await next command
         
-      }   }   }
+      }   }   
+
+      SoftSerialBLER.end();
+
+
+      }
 
 // ---===---
 
    void getRSSIF() { 
 
-    while (Serial.available() > 0) { //If there are available bytes...
+    SoftSerialBLEF.listen();
+
+    while (SoftSerialBLEF.available() > 0) { //If there are available bytes...
       
       static unsigned int tlm_pos = 0; //start at index zero
        
-      char inByte = Serial.read(); //get the next byte
+      char inByte = SoftSerialBLEF.read(); //get the next byte
       if (inByte != '\n' && (tlm_pos < maxlength - 1)) { //if it's before we reach the end...
         tlmF[tlm_pos] = inByte; //add to buffer
         tlm_pos++; //set index up
@@ -474,100 +299,44 @@ void retractActuators(){
         
         tlm_pos = 0;  // Await next command
         
-      }   }   }
+      }   }   
+      
+      SoftSerialBLEF.end();
+
+      }
           
 
 // ------- Bluetooth Serial End -------
 
 
-
-// ------- LoRa Start -------
-// ------- LoRa End -------
-
-
 // ------- Control Start -------
 
   void UpdateData(){
-    loopUltrasonic();
-    loopIR();
-    loopPressure();
-    getRSSIF();
     getRSSIL();
     getRSSIR();
+    getRSSIF();
   }
 
-    int threshUltrasonic = 60; // (reading of about 5 inches)
-  
-  void Debugger(){
-      
-      const int maxspeed = 6;
-
-      static int Speed  = 0;
-
-      int target = 0;
-
-      // Target Shifting
-        if ( distanceUltrasonic > threshUltrasonic ) { // Anything to stop both motors
-          target = maxspeed; 
-        }
-      
     
-      Speed = Speed + between( (target - Speed), -2, 1 );
-    
-      setMotorSpeed(Speed, Speed);
-
-      if (debugresponse) {
-      
-        Serial.print ("Debug Controller - Target speed is ");
-        Serial.print (target);
-        Serial.print (" , Motor duty is set to ");
-        Serial.println (Speed);
-        Serial.println ("");
-
-      }
-    }
-
 // ------- Control End -------
 
-
-
-// ------- Nav Start -------
-
-
-
-
-
-
-
-
-// ------- Nav End -------
-
-
-
 void setup() {
-
-  pinMode(UltrasonicTrig, OUTPUT); // Sets the trigPin as an OUTPUT
-  pinMode(UltrasonicEcho, INPUT); // Sets the echoPin as an INPUT
-
-  pinMode(FOR_RELAY_PIN, OUTPUT);
-  pinMode(REV_RELAY_PIN, OUTPUT);
 
   pinMode(DebugSwitchPin, INPUT_PULLUP);
 
   // Motor Setup
-    Serial2.begin(vescbaudrate);
-    vescML.setSerialPort(&Serial2);
+    // Serial2.begin(vescbaudrate);
+    // vescML.setSerialPort(&Serial2);
 
-    Serial3.begin(vescbaudrate);
-    vescMR.setSerialPort(&Serial3);
+    // Serial3.begin(vescbaudrate);
+    // vescMR.setSerialPort(&Serial3);
   
   // BLE Setup
     Serial.begin(9600);
     Serial1.begin(9600);
-    SoftSerialBLE.begin(9600);
-
-  // LoRa Setup
-    SoftSerialLoRa.begin(9600);
+    SoftSerialBLEL.begin(19200);
+    SoftSerialBLER.begin(9600);
+    SoftSerialBLEF.begin(9600);
 
   Serial.println("Mega Master Start!");
 
@@ -584,22 +353,18 @@ void setup() {
 
     // After the reason is taken care of, break is reset, and the main business comes
 
-
 // --- === ---
 void loop() {
 // --- === ---
-
- 
- 
   
  while (breakout == false) { // Run the user navigation
 
   Serial.println("I am stuck in the loop");
     UpdateData();
-    motordebug();
+    // motordebug();
     
 
-    setMotorSpeed(-5,-5);
+    // setMotorSpeed(-5,-5);
     
 
     if(disable()) { 

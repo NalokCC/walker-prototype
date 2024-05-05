@@ -9,7 +9,7 @@ SoftwareSerial lora(2,3);
 // Arduino Pin 3 goes to Lora RX
 String myString; 
 String garbage;
-//String data; 
+//String data;  
 void setup() {
   // put your setup code here, to run once:
 Serial.begin(115200);
